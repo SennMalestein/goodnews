@@ -1,116 +1,114 @@
-document.addEventListener('DOMContentLoaded', async function() {
-    const tbody = document.getElementById('newsBody');
-    const table = document.getElementById('newsTable');
+document.addEventListener('DOMContentLoaded', async function () {
+    const tbody = document.getElementById('news-body');
+    const table = document.getElementById('news-table');
     const headers = table.querySelectorAll('th');
+    const filterCategory = document.getElementById('filter-category');
+    const filterSource = document.getElementById('filter-source');
+    const filterButton = document.getElementById('filter-button');
 
-    // Function to populate the table with news items
+    let newsItems = []; // Store the fetched news items
+    let sessionReady = false; // Flag to track if session is set
+
     async function loadNews() {
         try {
             const response = await fetch('api-proxy.php', {
                 method: 'GET',
-                headers: {
-                    'Accept': 'application/json'
-                }
+                headers: { 'Accept': 'application/json' }
             });
-            
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
             const data = await response.json();
-            console.log('Full API Response:', data); // Log the entire API response for debugging
+            if (data.error) throw new Error(data.error);
             
-            if (data.error) {
-                throw new Error(data.error);
+            newsItems = data.results || []; // Store full news items list
+            console.log('Fetched newsItems:', newsItems); // Debug: Log fetched items
+
+            // Attempt to save newsItems in PHP session via AJAX
+            try {
+                const formData = new FormData();
+                formData.append('newsItems', JSON.stringify(newsItems));
+                const sessionResponse = await fetch('save_session.php', {
+                    method: 'POST',
+                    body: formData
+                });
+                if (!sessionResponse.ok) {
+                    console.warn('Session save failed with status:', sessionResponse.status);
+                } else {
+                    const sessionResult = await sessionResponse.json();
+                    console.log('Session save response:', sessionResult); // Debug: Log session save result
+                    if (sessionResult.status === 'success') {
+                        sessionReady = true; // Set flag when session is successfully saved
+                    } else {
+                        console.warn('Session save returned unexpected result:', sessionResult);
+                    }
+                }
+            } catch (sessionError) {
+                console.error('Error saving session:', sessionError);
             }
 
-            const newsItems = data.results || []; // Get all news items from the API response
-            console.log('News Items:', newsItems); // Log the news items array
-
-            const limitedNewsItems = newsItems.slice(0, 20); // Limit to first 20 items
-
-            // Clear the table body before populating
-            tbody.innerHTML = '';
-
-            limitedNewsItems.forEach((item, index) => {
-                // Debug: Log image and categories for each item
-                console.log(`Item ${index}:`, {
-                    image: item.image,
-                    categories: item.categories,
-                    title: item.title
-                });
-
-                const date = new Date(item.published_at);
-                const formattedDate = date.toLocaleDateString('en-US', { 
-                    day: '2-digit', 
-                    month: '2-digit', 
-                    year: '2-digit' 
-                });
-
-                // Debug image URL construction
-                const rawImageUrl = item.image || 'images/placeholder.jpg';
-                const imageUrl = item.image 
-                    ? `image-proxy.php?url=${encodeURIComponent(item.image)}` 
-                    : 'images/placeholder.jpg';
-                console.log(`Item ${index} Image URL:`, imageUrl); // Log the constructed image URL
-
-                // Use the first category name if available, otherwise fallback to "News" with debug
-                let categoryName = 'News'; // Default value
-                if (item.categories && Array.isArray(item.categories) && item.categories.length > 0) {
-                    categoryName = item.categories[0].name;
-                    console.log(`Item ${index} Category Name:`, categoryName); // Debug category assignment
-                } else {
-                    console.log(`Item ${index} Categories check failed:`, {
-                        categories: item.categories,
-                        isArray: Array.isArray(item.categories),
-                        length: item.categories ? item.categories.length : 'undefined'
-                    });
-                }
-
-                // Create the row and append it to the table
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${formattedDate || 'N/A'}</td>
-                    <td><img src="${imageUrl}" alt="News image" onerror="console.log('Image load failed for:', '${imageUrl}'); this.src='images/placeholder.jpg';"></td>
-                    <td>${item.title || 'No title'}</td>
-                    <td><span class="category">${categoryName}</span></td>
-                    <td>${item.description || 'No description available'}</td>
-                `;
-                tbody.appendChild(row);
-                console.log(`Row ${index} added to table with Category: ${categoryName}, Image: ${imageUrl}`); // Debug row addition
-            });
-
-            // Debug table contents after population
-            console.log('Table contents after population:', tbody.innerHTML);
+            // Proceed with populating filters and table even if session save fails
+            populateFilters(newsItems);
+            displayNews(newsItems);
         } catch (error) {
             console.error('Error fetching news:', error);
-            tbody.innerHTML = '<tr><td colspan="5">Failed to load news. Please try again later. Error: ' + error.message + '</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="5">Failed to load news. Please try again later.</td></tr>';
         }
     }
 
-    // Call loadNews only once when the page loads
+    function populateFilters(items) {
+        const categories = new Set();
+        const sources = new Set();
+
+        items.forEach(item => {
+            if (item.categories && item.categories.length > 0) categories.add(item.categories[0].name);
+            if (item.source && item.source.domain) sources.add(item.source.domain); // Use source.domain
+        });
+
+        filterCategory.innerHTML = '<option value="">All Categories</option>' +
+            Array.from(categories).map(cat => `<option value="${cat}">${cat}</option>`).join('');
+        filterSource.innerHTML = '<option value="">All Sources</option>' +
+            Array.from(sources).map(src => `<option value="${src}">${src}</option>`).join('');
+    }
+
+    function displayNews(items) {
+        tbody.innerHTML = '';
+        items.slice(0, 20).forEach(item => {
+            const date = new Date(item.published_at).toLocaleDateString('en-US', { day: '2-digit', month: '2-digit', year: '2-digit' });
+            const category = item.categories?.[0]?.name || 'News';
+            const imageUrl = item.image ? `image-proxy.php?url=${encodeURIComponent(item.image)}` : 'images/placeholder.jpg';
+            
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${date}</td>
+                <td><img src="${imageUrl}" alt="News image" onerror="this.src='images/placeholder.jpg';"></td>
+                <td>${item.title || 'No title'}</td>
+                <td><span class="category">${category}</span></td>
+                <td>${item.description || 'No description available'}</td>
+            `;
+            // Make the row clickable, but only if session is ready
+            row.addEventListener('click', () => {
+                if (!sessionReady) {
+                    alert('Session is not yet ready. Please wait a moment and try again.');
+                    return;
+                }
+                window.location.href = `detail.php?id=${item.id}`;
+            });
+            tbody.appendChild(row);
+        });
+    }
+
+    function filterNews() {
+        const selectedCategory = filterCategory.value;
+        const selectedSource = filterSource.value;
+        
+        const filteredItems = newsItems.filter(item => {
+            const categoryMatch = !selectedCategory || (item.categories?.[0]?.name === selectedCategory);
+            const sourceMatch = !selectedSource || (item.source?.domain === selectedSource); // Use source.domain
+            return categoryMatch && sourceMatch;
+        });
+        displayNews(filteredItems);
+    }
+
+    filterButton.addEventListener('click', filterNews);
+
     loadNews();
-
-    // Add sorting functionality
-    headers.forEach((header, index) => {
-        header.addEventListener('click', () => {
-            sortTable(index);
-        });
-    });
-
-    function sortTable(columnIndex) {
-        const rows = Array.from(tbody.querySelectorAll('tr'));
-        rows.sort((a, b) => {
-            const aValue = a.cells[columnIndex].textContent;
-            const bValue = b.cells[columnIndex].textContent;
-            return aValue.localeCompare(bValue);
-        });
-
-        // Clear and re-append sorted rows without triggering API calls
-        while (tbody.firstChild) {
-            tbody.removeChild(tbody.firstChild);
-        }
-        rows.forEach(row => tbody.appendChild(row));
-        console.log('Table contents after sorting:', tbody.innerHTML); // Debug table after sorting
-    }
 });
