@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Positive News That Inspires</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <section class="header-main">
@@ -33,14 +33,14 @@
                 </label>
                 <button id="filter-button">Confirm</button>
             </div>
-            <table id="news-table">
-                <thead>
-                    <tr>
-                        <th>Date</th>
-                        <th>Image</th>
-                        <th>Title</th>
-                        <th>Category</th>
-                        <th>Description</th>
+            <table class="news-table">
+                <thead class="news-header">
+                    <tr class="news-row">
+                        <th class="news-part" id="news-date">Date</th>
+                        <th class="news-part" id="news-img">Image</th>
+                        <th class="news-part" id="news-title">Title</th>
+                        <th class="news-part" id="news-cat">Category</th>
+                        <th class="news-part" id="news-descr">Description</th>
                     </tr>
                 </thead>
                 <tbody id="news-body">
