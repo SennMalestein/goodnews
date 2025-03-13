@@ -1,7 +1,6 @@
 document.addEventListener('DOMContentLoaded', async function () {
     const tbody = document.getElementById('news-body');
     const table = document.getElementById('news-table');
-    const headers = table.querySelectorAll('th');
     const filterCategory = document.getElementById('filter-category');
     const filterSource = document.getElementById('filter-source');
     const filterButton = document.getElementById('filter-button');
