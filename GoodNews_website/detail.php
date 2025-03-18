@@ -22,7 +22,7 @@ error_log('Found article: ' . print_r($article, true));
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title><?php echo htmlspecialchars($article['title'] ?? 'Artikel Detail'); ?></title>
-  <link rel="stylesheet" href="stylesheet.css">
+  <link rel="stylesheet" href="CSS/style.css">
   <style>
     /* Resetten van de standaardmarges en paddings */
     * {
@@ -31,17 +31,38 @@ error_log('Found article: ' . print_r($article, true));
         box-sizing: border-box;
     }
 
+    .container {
+        max-width: 900px; /* Breder zodat het niet te smal is */
+        background-color: white; /* Witte achtergrond */
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); /* Zachte schaduw voor een mooi effect */
+    }
+
     body {
         font-family: Arial, sans-serif;
         margin: 0;
-        padding: 20px;
-        background-color: #f5f5f5;
+        padding: 0;
+        background: #789DFF;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        min-height: 100vh;
+    }
+
+    .header-subtitel {
+        margin: 0;
+        color: #fff;
+        font-style: italic;
     }
 
     /* Bovenste navigatiebalk (back to home) */
     header {
-        padding: 20px;
-        border-bottom: 1px solid #ddd;
+        width: 100%;
+        background: #345094;
+        color: white;
+        text-align: center;
+        padding: 20px 0;
     }
 
     header a {
@@ -95,6 +116,21 @@ error_log('Found article: ' . print_r($article, true));
         font-weight: bold;
     }
 
+    .back-to-home {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    }
+
+    .back-to-home a {
+        text-decoration: none;
+        color: white;
+        background-color: #007BFF;
+        padding: 10px 15px;
+        border-radius: 5px;
+        font-weight: bold;
+    }
+
     /* Titel van het artikel */
     h1 {
         font-size: 1.8rem;
@@ -110,34 +146,45 @@ error_log('Found article: ' . print_r($article, true));
 </head>
 <body>
   <header>
-    <a href="index.php">back to home</a>
+    <section class="header-main">
+        <div class="header">
+            <div class="header-logo">
+                <h1 class="header-titel">DE EEUWIGE OPTIMIST</h1>
+                <p class="header-subtitel">Positive News That Inspires</p>
+                <div class="back-to-home">
+                    <a href="index.php">Back to Home</a>
+                </div>
+            </div>
+        </div>
+    </section>
   </header>
+    <div class="container">
+        <main>
+            <?php if ($article): ?>
+            <div class="image-container">
+                <img src="<?php echo $article['image'] ? 'image-proxy.php?url=' . urlencode($article['image']) : 'images/placeholder.jpg'; ?>" alt="<?php echo htmlspecialchars($article['title'] ?? 'Afbeelding'); ?>">
+            </div>
 
-  <main>
-    <?php if ($article): ?>
-      <div class="image-container">
-        <img src="<?php echo $article['image'] ? 'image-proxy.php?url=' . urlencode($article['image']) : 'images/placeholder.jpg'; ?>" alt="<?php echo htmlspecialchars($article['title'] ?? 'Afbeelding'); ?>">
-      </div>
+            <div class="meta-info">
+                <span class="category"><?php echo htmlspecialchars($article['categories'][0]['name'] ?? 'Nieuws'); ?></span>
+                <span class="date"><?php echo date('d-m-y', strtotime($article['published_at'] ?? '')); ?></span>
+            </div>
 
-      <div class="meta-info">
-        <span class="category"><?php echo htmlspecialchars($article['categories'][0]['name'] ?? 'Nieuws'); ?></span>
-        <span class="date"><?php echo date('d-m-y', strtotime($article['published_at'] ?? '')); ?></span>
-      </div>
+            <h1><?php echo htmlspecialchars($article['title'] ?? 'Geen titel'); ?></h1>
 
-      <h1><?php echo htmlspecialchars($article['title'] ?? 'Geen titel'); ?></h1>
-
-      <p>
-        <?php echo nl2br(htmlspecialchars($article['description'] ?? 'Geen beschrijving beschikbaar')); ?>
-      </p>
-      <p>
-        <?php echo nl2br(htmlspecialchars($article['body'] ?? 'Geen volledig artikel beschikbaar')); ?>
-      </p>
-      <p>
-        <a href="<?php echo htmlspecialchars($article['href'] ?? '#'); ?>" target="_blank">Lees meer op de originele site</a>
-      </p>
-    <?php else: ?>
-      <p>Artikel niet gevonden.</p>
-    <?php endif; ?>
-  </main>
+            <p>
+                <?php echo nl2br(htmlspecialchars($article['description'] ?? 'Geen beschrijving beschikbaar')); ?>
+            </p>
+            <p>
+                <?php echo nl2br(htmlspecialchars($article['body'] ?? 'Geen volledig artikel beschikbaar')); ?>
+            </p>
+            <p>
+                <a href="<?php echo htmlspecialchars($article['href'] ?? '#'); ?>" target="_blank">Lees meer op de originele site</a>
+            </p>
+            <?php else: ?>
+            <p>Artikel niet gevonden.</p>
+            <?php endif; ?>
+        </main>
+    </div>
 </body>
 </html>
